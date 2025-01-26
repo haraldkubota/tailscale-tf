@@ -22,7 +22,8 @@ export TF_VAR_cloudflare_dns_id="YOUR_ZONE_ID"
 export TF_VAR_cloudflare_api_token="YOUR_API_TOKEN"
 ```
 
-This is what you should see in the Tailscale management console:
+This is what you should see in the Tailscale management console: your on-prem Tailscale gateway:
+
 ![screenshot](img/on-prem-gw.png)
 
 
@@ -42,12 +43,12 @@ cloudflare_dns = "tsgw-prod.mydomain.org"
 instance_ips = "ec2-13-112-16-13.ap-northeast-1.compute.amazonaws.com"
 ```
 
-You now have 2 EC2 instances: one in a private network (172.31.2.0/24)
+This builds 2 EC2 instances: one in a private network (172.31.2.0/24)
 which is the representative of all EC2
 instances in private subnets,
 and one in a public subnet (172.31.1.0/24) which contains the Tailscale gateway.
 
-Connect to the AWS Tailscale gateway with the SSH key you supplied (in main.tf):
+Connect to the newly created AWS Tailscale gateway with the SSH key you supplied (in main.tf):
 
 ```
 ❯ ssh -i ~/.ssh/aws ec2-user@ec2-13-112-16-13.ap-northeast-1.compute.amazonaws.com
@@ -64,7 +65,7 @@ Connect to the AWS Tailscale gateway with the SSH key you supplied (in main.tf):
 [ec2-user@ip-172-31-1-204 ~]$ 
 ```
 
-# On AWS Tailscale GW instance
+# Configure the Tailscale GW instance
 
 Install and configure Tailscale on the GW instance (the EC2 in the public subnet) and advertise the internal subnets in the VPC:
 
@@ -84,8 +85,7 @@ Success.
 ❯ 
 ```
 
-
-Advertise all networks in your subnets you like to be connectable via Tailscale. You can select specific ones, e.g. only the private networks. Simply adjust the advertised routes.
+Note: Advertise all networks in your subnets you like to be connectable via Tailscale. You can select specific ones, e.g. only the private networks. Simply adjust the advertised routes.
 
 In a browser on any computer:
 
@@ -98,11 +98,9 @@ In a browser on any computer:
 
 ![screenshot](img/subnet-route-approval.png)
 
-* By now you should see 2 machines with subnets and expiry disabled:
+* By now you should see 2 machines in the Tailscale management console, both with advertised subnets and key expiry disabled:
  * your gateway on-prem you had before and
- * the AWS Tailscale gateway
-
-And this is after approving the route advertising and the expiry is disabled:
+ * the AWS Tailscale gateway which is new
 
 ![screenshot](img/two-gw.png)
 
@@ -134,13 +132,15 @@ If your default router is not the Tailscale gateway, your hosts on your on-prem 
 sudo ip route add 172.31.0.0/16 via 192.168.45.39
 ```
 with 192.168.45.39 being the on-prem Tailscale gateway.
+
 The routing on the AWS side is handled via its routing tables which are set via TF.
 
 ## Testing it
 
 At this point you can connect via ssh from either gateway to any hosts on
-the other network using their local IP (172.310.0/16 and 192.168.45.0/24).
-E.g. connecting to the private subnet EC2 instance:
+the other network using their local IP (172.310.0/16 respectively 192.168.45.0/24).
+
+E.g. connecting frome the home network to the private subnet EC2 instance:
 
 ```
 ❯ ssh -i ~/.ssh/aws ec2-user@172.31.2.128
@@ -158,7 +158,7 @@ Last login: Sun Jan 26 08:49:14 2025 from 172.31.1.204
 [ec2-user@ip-172-31-2-128 ~]$ 
 ```
 
-and it works equally from the private subnet EC2 instance to a on-prem Linux machine:
+and it works equally from the private subnet EC2 instance to an on-prem Linux machine:
 
 ```
 [ec2-user@ip-172-31-2-128 ~]$ ssh harald@192.168.45.40
@@ -188,3 +188,4 @@ Last login: Sun Jan 26 17:48:30 2025 from 192.168.45.39
 
 * Install Tailscale and configure automatically
 * Maybe create an AMI with a fully working Tailscale setup
+* Use this setup for ECS Anywhere
