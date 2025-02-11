@@ -107,9 +107,15 @@ In a browser on any computer:
  * disable key expiry and
  * approve the route to the VPC
 
+![key-and-routing](img/key-expiry.png)
+![key-and-routing](img/subnet-route-approval.png)
+
+
 You should see 2 machines with subnets and expiry disabled on https://login.tailscale.com/admin/machines
  * your gateway on-prem you had before and
  * the AWS Tailscale gateway
+
+![key-and-routing](img/two-gw.png)
 
 The routing advertises all of your VPC to be connectable from home via Tailscale. You can select specific subnets instead of the complete VPC. Simply adjust the advertised routes to your liking.
 The default is to use the complete VPC. Thsi is convenient, but not secure.
