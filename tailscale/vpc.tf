@@ -75,6 +75,7 @@ resource "aws_route_table" "private" {
   }
 }
 
+# Only associate the first private subnet with the Tailscale route to the on-prem network
 resource "aws_route_table_association" "private" {
   subnet_id      = aws_subnet.private_subnets[0].id
   route_table_id = aws_route_table.private.id

@@ -100,15 +100,9 @@ Success.
 [ec2-user@ip-10-8-1-168 ~]$ sudo systemctl enable --now tailscaled
 ```
 
-This advertise all of your VPC to be connectable via Tailscale. You can select specific ones, e.g. only a private network. Simply adjust the advertised routes to your liking.
-The default is to use the complete VPC. Convenient, but not secure.
-
-Also be aware that any EC2 machine which you can reach from home, can also reach every machine at home. 
-Again, it's convenient, but not secure.
-
 In a browser on any computer:
 
-* Open a browser for above URL, authenticate and approve.
+* Open a browser for above URL (https://login.tailscale.com/a/1893XXXXXXXXXX in my example), authenticate and approve.
 * Go to the Tailscale management console and
  * disable key expiry and
  * approve the route to the VPC
@@ -116,6 +110,12 @@ In a browser on any computer:
 You should see 2 machines with subnets and expiry disabled on https://login.tailscale.com/admin/machines
  * your gateway on-prem you had before and
  * the AWS Tailscale gateway
+
+The routing advertises all of your VPC to be connectable from home via Tailscale. You can select specific subnets instead of the complete VPC. Simply adjust the advertised routes to your liking.
+The default is to use the complete VPC. Thsi is convenient, but not secure.
+
+Also be aware that any EC2 machine in the first private subnet can also reach every machine at home. 
+Again, it's convenient, but not secure.
 
 ## Verify routes
 
@@ -145,7 +145,11 @@ If your default router is not the Tailscale gateway, your hosts need to know how
 sudo ip route add 10.8.0.0/16 via 192.168.4.39
 ```
 
-The routing on the AWS side is handled via its routing tables which are set via TF.
+If you have IP routing protocols running at home, you do not need this.
+
+## Routing in your AWS subnets
+
+The routing on the AWS subnets is handled via its routing tables which are set via TF. Note that in my example, only the first private subnet gets to know the route how to reach home.
 
 ## It works!
 
