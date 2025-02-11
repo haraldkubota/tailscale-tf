@@ -3,6 +3,24 @@ variable "region" {
   default = "ap-northeast-1"
 }
 
+variable "azs" {
+  type        = list(string)
+  description = "Availability Zones"
+  default     = []
+}
+
+variable "public_subnet_cidrs" {
+  type        = list(string)
+  description = "Public Subnet CIDR values"
+  default     = []
+}
+
+variable "private_subnet_cidrs" {
+  type        = list(string)
+  description = "Private Subnet CIDR values"
+  default     = []
+}
+
 variable ec2_type {
   type    = string
   default = "t2.micro"
@@ -29,9 +47,9 @@ variable "name_prefix" {
 }
 
 # List of cidr blocks
-variable "cidr_blocks" {
-  type        = list(string)
-  description = "cidr blocks definition"
+variable "vpc_cidr_block" {
+  type        = string
+  description = "VPC CIDR"
 }
 
 variable "cidr_on_prem" {
@@ -51,3 +69,4 @@ variable "cloudflare_api_token" {
 variable "cloudflare_dns_id" {
   type = string
 }
+

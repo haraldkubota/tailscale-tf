@@ -14,8 +14,8 @@ terraform {
 
 variable "workspace_iam_roles" {
   default = {
-    dev  = "arn:aws:iam::YOUR_AWS_DEV_ACCOUNT_ID:user/admin"
-    prod = "arn:aws:iam::YOUR_AWS_PROD_ACCOUNT_ID:user/admin"
+    dev  = "arn:aws:iam::DEV-AWS-ID:role/Terraform"
+    prod = "arn:aws:iam::PROD-AWS-ID:user/admin"
   }
 }
 

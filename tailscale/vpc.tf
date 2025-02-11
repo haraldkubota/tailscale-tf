@@ -1,6 +1,8 @@
-data "aws_vpc" "default" {
-  default    = true
-  cidr_block = var.cidr_blocks[0]
+resource "aws_vpc" "main" {
+  cidr_block = var.vpc_cidr_block
+  tags = {
+    Name = "My VPC"
+  }
 }
 
 # Get availability zones (no local zones)
@@ -11,99 +13,69 @@ data "aws_availability_zones" "nolocal" {
   }
 }
 
-resource "aws_security_group" "ssh_and_https" {
-  name        = "ssh-and-https"
-  description = "Allow incoming and outgoing traffic on port 22 and 443"
-  vpc_id      = data.aws_vpc.default.id
-  ingress {
-    description = "SSH ingress"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
-    description = "SSH ingress"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
+resource "aws_subnet" "public_subnets" {
+  count             = length(var.public_subnet_cidrs)
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = element(var.public_subnet_cidrs, count.index)
+  availability_zone = element(var.azs, count.index)
 
-# Create 2 subnets in one AZ
-# Optionally create 2 more in another AZ
-
-resource "aws_subnet" "public" {
-  vpc_id            = data.aws_vpc.default.id
-  cidr_block        = var.cidr_blocks[1]
-  availability_zone = data.aws_availability_zones.nolocal.names[0]
   tags = {
-    Env = "prod"
+    Name = "Public Subnet ${count.index + 1}"
   }
 }
 
-resource "aws_subnet" "private" {
-  vpc_id            = data.aws_vpc.default.id
-  cidr_block        = var.cidr_blocks[2]
-  availability_zone = data.aws_availability_zones.nolocal.names[0]
+resource "aws_subnet" "private_subnets" {
+  count             = length(var.private_subnet_cidrs)
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = element(var.private_subnet_cidrs, count.index)
+  availability_zone = element(var.azs, count.index)
+
   tags = {
-    Env = "prod"
+    Name = "Private Subnet ${count.index + 1}"
   }
 }
+
 
 # Get the default Internet GW
-data "aws_internet_gateway" "default" {
-  filter {
-    name   = "attachment.vpc-id"
-    values = [data.aws_vpc.default.id]
+resource "aws_internet_gateway" "gw" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "VPC Internet Gateway"
   }
 }
 
 # Route Table for Public Subnet
 # Does Internet (by default) and Tailscale network and on-prem
-resource "aws_route_table" "public" {
-  vpc_id = data.aws_vpc.default.id
+resource "aws_route_table" "public_rt" {
+  vpc_id = aws_vpc.main.id
+
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = data.aws_internet_gateway.default.id
+    gateway_id = aws_internet_gateway.gw.id
   }
-  # route {
-  #   cidr_block = "100.64.0.0/10"
-  #   network_interface_id = aws_instance.tailscale.primary_network_interface_id
-  # }
-  # route {
-  #   cidr_block           = var.cidr_on_prem
-  #   network_interface_id = aws_instance.tailscale.primary_network_interface_id
-  # }
+
   tags = {
-    Name = "Public Subnet Route Table"
+    Name = "Public Route Table"
   }
+}
+resource "aws_route_table_association" "public_subnet_asso" {
+  count          = length(var.public_subnet_cidrs)
+  subnet_id      = element(aws_subnet.public_subnets[*].id, count.index)
+  route_table_id = aws_route_table.public_rt.id
 }
 
 # Private subnet does not need to know anything about Tailscale
 # Only needs to know how to reach the on-prem network
 resource "aws_route_table" "private" {
-  vpc_id = data.aws_vpc.default.id
+  vpc_id = aws_vpc.main.id
   route {
     cidr_block           = var.cidr_on_prem
     network_interface_id = aws_instance.tailscale.primary_network_interface_id
   }
 }
 
-resource "aws_route_table_association" "public" {
-  subnet_id      = aws_subnet.public.id
-  route_table_id = aws_route_table.public.id
-}
-
 resource "aws_route_table_association" "private" {
-  subnet_id      = aws_subnet.private.id
+  subnet_id      = aws_subnet.private_subnets[0].id
   route_table_id = aws_route_table.private.id
 }
-
